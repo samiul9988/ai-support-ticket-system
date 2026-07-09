@@ -123,6 +123,65 @@ class GeminiService implements AIServiceInterface
         }
     }
 
+    public function generateTicketInsights(
+        string $ticketTitle,
+        string $ticketDescription,
+        array $conversationHistory = [],
+        array $knowledgeBase = [],
+    ): array {
+        $this->circuitBreaker->isAvailable();
+
+        $fullPrompt = $this->promptBuilder->ticketInsights(
+            ticketTitle: $ticketTitle,
+            ticketDescription: $ticketDescription,
+            conversationHistory: $conversationHistory,
+            knowledgeBase: $knowledgeBase,
+        );
+
+        $startTime = microtime(true);
+
+        try {
+            $result = $this->retryHandler->execute(function () use ($fullPrompt) {
+                return $this->executeApiCall($fullPrompt, 0.4, 1024);
+            }, 'generate_insights');
+
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            $parsed = $this->parser->parseJson($result['response']);
+            $usage = $this->parser->parseUsageMetadata($result['response']);
+
+            $promptHistoryId = $this->logPrompt('ticket_insights', $fullPrompt, null);
+
+            $this->usageTracker->track(
+                promptHistoryId: $promptHistoryId,
+                model: $this->client->getModel(),
+                promptTokens: $usage['prompt_tokens'],
+                completionTokens: $usage['completion_tokens'],
+                totalTokens: $usage['total_tokens'],
+                durationMs: $durationMs,
+                success: true,
+            );
+
+            $this->circuitBreaker->recordSuccess();
+
+            Log::info('AI ticket insights generated', [
+                'tokens' => $usage['total_tokens'],
+                'duration_ms' => $durationMs,
+            ]);
+
+            return array_merge($parsed, [
+                'generated_at' => now()->toIso8601String(),
+                '_usage' => $usage,
+            ]);
+        } catch (\Throwable $e) {
+            $this->circuitBreaker->recordFailure();
+
+            Log::error('AI ticket insights failed', ['error' => $e->getMessage()]);
+
+            return $this->defaultInsights();
+        }
+    }
+
     public function getUsageToday(): array
     {
         return [
@@ -252,6 +311,28 @@ class GeminiService implements AIServiceInterface
             'recommended_action' => 'Review ticket manually',
             'requires_human' => false,
             'confidence' => 0.0,
+            '_usage' => [
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
+                'total_tokens' => 0,
+            ],
+        ];
+    }
+
+    protected function defaultInsights(): array
+    {
+        return [
+            'conversation_summary' => 'AI insights are currently unavailable.',
+            'customer_intent' => 'Unable to determine customer intent.',
+            'suggested_priority' => 'medium',
+            'urgency_level' => 'medium',
+            'urgency_reason' => 'Insufficient data for urgency analysis.',
+            'suggested_category' => 'general',
+            'customer_sentiment' => 'neutral',
+            'key_findings' => [],
+            'possible_solutions' => [],
+            'recommended_next_step' => 'Review ticket manually.',
+            'generated_at' => now()->toIso8601String(),
             '_usage' => [
                 'prompt_tokens' => 0,
                 'completion_tokens' => 0,

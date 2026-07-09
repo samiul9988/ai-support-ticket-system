@@ -258,4 +258,58 @@ Answer the customer's question based on the knowledge base article provided.
 4. Keep it under **120 words**. Use Markdown formatting.
 PROMPT,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket Insights (Admin Dashboard)
+    |--------------------------------------------------------------------------
+    |
+    | Generated when an admin opens a ticket to get a comprehensive overview.
+    | Returns structured JSON with conversation summary, intent, and solutions.
+    */
+
+    'ticket_insights' => <<<'PROMPT'
+Analyze this support ticket thread and return ONLY valid JSON, no markdown, no code fences, no extra text.
+
+**Context**:
+- **Ticket Title**: {ticket_title}
+- **Description**: {ticket_description}
+- **Conversation History**: {conversation_history}
+- **Knowledge Base**: {knowledge_base}
+
+**Output JSON schema** (all fields required):
+```json
+{
+    "conversation_summary": "string: 2-3 sentence factual summary of the entire thread. Include what was tried and what happened.",
+    "customer_intent": "string: what the customer actually wants. Be specific. e.g. 'Customer needs to access billing page to generate invoice for client deadline tomorrow'",
+    "suggested_priority": "low|medium|high|urgent",
+    "urgency_level": "low|medium|high|critical",
+    "urgency_reason": "string: brief explanation for urgency level, max 20 words",
+    "suggested_category": "account|billing|technical|feature_request|bug_report|general",
+    "customer_sentiment": "positive|neutral|negative|frustrated|angry",
+    "key_findings": ["string array: 2-4 key observations from the conversation"],
+    "possible_solutions": [
+        {
+            "solution": "string: specific actionable solution, max 30 words",
+            "confidence": 0.0-1.0,
+            "estimated_time": "string: e.g. '15 minutes' or '1 hour'",
+            "requires_human": true/false
+        }
+    ],
+    "recommended_next_step": "string: best immediate action for the agent, max 20 words"
+}
+```
+
+**Priority guidelines**:
+- `urgent`: System down, security breach, data loss, legal deadline
+- `high`: Blocked workflow, billing issue, hard deadline
+- `medium`: Feature not working, configuration help
+- `low`: Cosmetic, feature request, general question
+
+**Solution guidelines**:
+- Order by confidence (highest first)
+- Only include solutions you're confident about (confidence >= 0.5)
+- If no good solution exists, suggest escalation
+- Reference knowledge base articles when applicable
+PROMPT,
+
 ];

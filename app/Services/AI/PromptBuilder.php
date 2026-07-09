@@ -123,6 +123,20 @@ class PromptBuilder
         ]);
     }
 
+    public function ticketInsights(
+        string $ticketTitle,
+        string $ticketDescription,
+        array $conversationHistory = [],
+        array $knowledgeBase = [],
+    ): string {
+        return $this->buildWithoutSystem('ticket_insights', [
+            'ticket_title' => $ticketTitle,
+            'ticket_description' => $ticketDescription,
+            'conversation_history' => $this->formatConversation($conversationHistory),
+            'knowledge_base' => $this->formatKnowledgeBase($knowledgeBase),
+        ]);
+    }
+
     public function getSystemIdentity(): string
     {
         return $this->systemIdentity;

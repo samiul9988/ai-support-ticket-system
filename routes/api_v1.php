@@ -45,4 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/tickets/{ticketId}/replies', [TicketReplyController::class, 'index']);
     Route::post('/tickets/{ticketId}/replies', [TicketReplyController::class, 'store']);
+
+    Route::get('/tickets/{id}/insights', [TicketController::class, 'insights']);
 });

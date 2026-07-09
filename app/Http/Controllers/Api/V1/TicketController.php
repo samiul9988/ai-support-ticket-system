@@ -170,4 +170,21 @@ class TicketController extends Controller
 
         return $this->success($this->ticketService->getStats());
     }
+
+    public function insights(int $id, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->findOrFail($id);
+
+        if ($request->user()->cannot('view', $ticket)) {
+            return $this->forbidden();
+        }
+
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden('AI insights are only available for admins and agents.');
+        }
+
+        $insights = $this->ticketService->getAiInsights($ticket);
+
+        return $this->success($insights, 'AI insights generated successfully');
+    }
 }

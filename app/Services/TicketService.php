@@ -157,6 +157,67 @@ class TicketService
         return $this->replyRepository->paginateByTicket($ticketId);
     }
 
+    public function getAiInsights(Ticket $ticket): array
+    {
+        $cachedInsights = $ticket->ai_context['insights'] ?? null;
+
+        if ($cachedInsights && $this->isInsightsFresh($cachedInsights)) {
+            return $cachedInsights;
+        }
+
+        $conversationHistory = $ticket->replies()
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn ($reply) => ($reply->is_ai_generated ? 'AI' : $reply->user?->name ?? 'Customer') . ': ' . $reply->content)
+            ->toArray();
+
+        $knowledgeArticles = \App\Models\KnowledgeArticle::published()
+            ->where('category_id', $ticket->category_id)
+            ->orWhereNull('category_id')
+            ->limit(5)
+            ->get()
+            ->map(fn ($a) => '[' . $a->title . '] ' . $a->content)
+            ->toArray();
+
+        $insights = $this->aiService->generateTicketInsights(
+            ticketTitle: $ticket->title,
+            ticketDescription: $ticket->description,
+            conversationHistory: $conversationHistory,
+            knowledgeBase: $knowledgeArticles,
+        );
+
+        $this->cacheInsights($ticket, $insights);
+
+        Log::info('AI ticket insights generated for admin', [
+            'ticket_id' => $ticket->id,
+            'priority' => $insights['suggested_priority'] ?? '?',
+            'sentiment' => $insights['customer_sentiment'] ?? '?',
+        ]);
+
+        return $insights;
+    }
+
+    protected function cacheInsights(Ticket $ticket, array $insights): void
+    {
+        $currentContext = $ticket->ai_context ?? [];
+
+        $currentContext['insights'] = $insights;
+        $currentContext['insights_generated_at'] = now()->toIso8601String();
+
+        $ticket->update(['ai_context' => $currentContext]);
+    }
+
+    protected function isInsightsFresh(array $insights): bool
+    {
+        $generatedAt = $insights['generated_at'] ?? null;
+
+        if (! $generatedAt) {
+            return false;
+        }
+
+        return now()->diffInMinutes($generatedAt) < 5;
+    }
+
     protected function validateStatusTransition(Ticket $ticket, TicketStatus $newStatus): void
     {
         if ($ticket->status === $newStatus) {

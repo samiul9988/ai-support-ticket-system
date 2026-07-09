@@ -13,6 +13,13 @@ interface AIServiceInterface
 
     public function analyzeTicket(string $title, string $description): array;
 
+    public function generateTicketInsights(
+        string $ticketTitle,
+        string $ticketDescription,
+        array $conversationHistory = [],
+        array $knowledgeBase = [],
+    ): array;
+
     public function getUsageToday(): array;
 
     public function isCircuitOpen(): bool;
