@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AIDashboardController;
 use App\Http\Controllers\Api\V1\AdminKnowledgeArticleController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\KnowledgeArticleController;
@@ -55,6 +56,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tickets/{id}/sentiment', [TicketController::class, 'sentiment']);
     Route::get('/tickets/{id}/classification', [TicketController::class, 'classification']);
     Route::get('/tickets/{id}/rag-answer', [TicketController::class, 'ragAnswer']);
+
+    Route::prefix('ai-dashboard')->group(function () {
+        Route::get('/overview', [AIDashboardController::class, 'overview']);
+        Route::get('/daily', [AIDashboardController::class, 'dailyUsage']);
+        Route::get('/monthly', [AIDashboardController::class, 'monthlyUsage']);
+        Route::get('/hourly', [AIDashboardController::class, 'hourlyToday']);
+        Route::get('/categories', [AIDashboardController::class, 'topCategories']);
+        Route::get('/models', [AIDashboardController::class, 'modelBreakdown']);
+        Route::get('/failures', [AIDashboardController::class, 'recentFailures']);
+        Route::get('/requests', [AIDashboardController::class, 'recentRequests']);
+    });
 
     Route::prefix('admin/knowledge-base')->group(function () {
         Route::get('/', [AdminKnowledgeArticleController::class, 'index']);
