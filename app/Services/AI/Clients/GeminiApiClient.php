@@ -3,9 +3,9 @@
 namespace App\Services\AI\Clients;
 
 use App\Exceptions\AIException;
+use App\Services\Logging\AILogger;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Client\PendingRequest;
 
@@ -31,27 +31,39 @@ class GeminiApiClient
         $this->validateConfiguration();
 
         $endpoint = "{$this->baseUrl}/models/{$this->model}:generateContent";
+        $payloadSize = strlen(json_encode($payload));
+        $startTime = microtime(true);
 
-        Log::debug('Gemini API request', [
-            'endpoint' => $endpoint,
-            'model' => $this->model,
-            'payload_size' => strlen(json_encode($payload)),
-        ]);
+        $logger = AILogger::for($this->model, 'generate_content');
+        $logId = $logger->logRequest($endpoint, $payloadSize);
 
         try {
             $response = $this->httpClient()
                 ->post("{$endpoint}?key={$this->apiKey}", $payload);
 
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+            $statusCode = $response->status();
+
             if (! $response->successful()) {
-                $statusCode = $response->status();
                 $body = $response->body();
-
-                Log::error('Gemini API HTTP error', [
-                    'status' => $statusCode,
-                    'body' => substr($body, 0, 500),
-                ]);
-
                 $errorData = $this->parseErrorBody($body);
+
+                $errorType = match (true) {
+                    $statusCode === 429 => 'rate_limit',
+                    $statusCode === 400 && str_contains(strtolower($body), 'safety') => 'content_filtered',
+                    $statusCode >= 500 => 'server_error',
+                    $statusCode === 403 => 'auth_error',
+                    default => 'api_error',
+                };
+
+                $logger->logError(
+                    logId: $logId,
+                    httpStatus: $statusCode,
+                    errorType: $errorType,
+                    errorMessage: $errorData['message'] ?? 'Unknown error',
+                    durationMs: $durationMs,
+                    responseBody: $body,
+                );
 
                 throw match (true) {
                     $statusCode === 429 => AIException::rateLimitExceeded(
@@ -76,9 +88,28 @@ class GeminiApiClient
                 };
             }
 
+            $logger->logResponse(
+                logId: $logId,
+                httpStatus: $statusCode,
+                tokens: [
+                    'total_tokens' => 0,
+                    'prompt_tokens' => 0,
+                    'completion_tokens' => 0,
+                ],
+                durationMs: $durationMs,
+            );
+
             return $response;
         } catch (ConnectionException $e) {
-            Log::error('Gemini connection failed', ['error' => $e->getMessage()]);
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            $logger->logError(
+                logId: $logId,
+                httpStatus: 0,
+                errorType: 'connection_failed',
+                errorMessage: $e->getMessage(),
+                durationMs: $durationMs,
+            );
 
             throw AIException::serviceUnavailable(
                 "Cannot connect to Gemini API: {$e->getMessage()}",

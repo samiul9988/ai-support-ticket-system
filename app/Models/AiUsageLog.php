@@ -20,6 +20,14 @@ class AiUsageLog extends Model
         'duration_ms',
         'success',
         'error_message',
+        'http_status',
+        'request_endpoint',
+        'operation',
+        'request_payload_size',
+        'response_body',
+        'retry_count',
+        'error_type',
+        'log_level',
     ];
 
     protected function casts(): array
@@ -31,6 +39,8 @@ class AiUsageLog extends Model
             'cost' => 'float',
             'duration_ms' => 'integer',
             'success' => 'boolean',
+            'request_payload_size' => 'integer',
+            'retry_count' => 'integer',
         ];
     }
 
@@ -57,5 +67,20 @@ class AiUsageLog extends Model
     public function scopeFailed($query)
     {
         return $query->where('success', false);
+    }
+
+    public function scopeByOperation($query, string $operation)
+    {
+        return $query->where('operation', $operation);
+    }
+
+    public function scopeErrorsOnly($query)
+    {
+        return $query->where('log_level', 'error');
+    }
+
+    public function scopeRetried($query)
+    {
+        return $query->where('retry_count', '>', 0);
     }
 }

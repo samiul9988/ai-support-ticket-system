@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AdminDashboardController;
 use App\Http\Controllers\Api\V1\AIDashboardController;
+use App\Http\Controllers\Api\V1\AILogController;
 use App\Http\Controllers\Api\V1\AdminKnowledgeArticleController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\KnowledgeArticleController;
@@ -67,6 +68,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/models', [AIDashboardController::class, 'modelBreakdown']);
         Route::get('/failures', [AIDashboardController::class, 'recentFailures']);
         Route::get('/requests', [AIDashboardController::class, 'recentRequests']);
+
+        Route::get('/logs', [AILogController::class, 'index']);
+        Route::get('/logs/summary', [AILogController::class, 'summary']);
+        Route::get('/logs/{id}', [AILogController::class, 'show']);
     });
 
     Route::prefix('admin/dashboard')->group(function () {

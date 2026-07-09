@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use App\Services\Logging\AILogger;
 use Illuminate\Support\Facades\Log;
 
 class RetryHandler
@@ -14,6 +15,8 @@ class RetryHandler
 
     protected array $retryOnStatus;
 
+    protected ?int $currentLogId = null;
+
     public function __construct(array $config = [])
     {
         $this->maxRetries = $config['max_retries'] ?? config('gemini.providers.gemini.max_retries', 3);
@@ -22,10 +25,18 @@ class RetryHandler
         $this->retryOnStatus = $config['retry_on_status'] ?? config('gemini.providers.gemini.retry_on_status', [429, 500, 502, 503, 504]);
     }
 
+    public function withLogId(int $logId): self
+    {
+        $this->currentLogId = $logId;
+
+        return $this;
+    }
+
     public function execute(callable $action, string $operation = 'api_call'): mixed
     {
         $attempt = 0;
         $lastException = null;
+        $logger = AILogger::for('gemini', $operation);
 
         while ($attempt <= $this->maxRetries) {
             try {
@@ -40,13 +51,13 @@ class RetryHandler
                 $attempt++;
                 $delay = $this->calculateDelay($attempt);
 
-                Log::warning('AI Retry', [
-                    'operation' => $operation,
-                    'attempt' => $attempt,
-                    'max_retries' => $this->maxRetries,
-                    'delay_ms' => $delay,
-                    'error' => $e->getMessage(),
-                ]);
+                $logger->logRetry(
+                    logId: $this->currentLogId ?? 0,
+                    attempt: $attempt,
+                    maxRetries: $this->maxRetries,
+                    delayMs: $delay,
+                    error: $e->getMessage(),
+                );
 
                 usleep($delay * 1000);
             }
