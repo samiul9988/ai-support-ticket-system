@@ -187,4 +187,34 @@ class TicketController extends Controller
 
         return $this->success($insights, 'AI insights generated successfully');
     }
+
+    public function sentiment(int $id, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->findOrFail($id);
+
+        if ($request->user()->cannot('view', $ticket)) {
+            return $this->forbidden();
+        }
+
+        $sentiments = $ticket->sentiments()
+            ->with('reply')
+            ->latest()
+            ->limit(20)
+            ->get();
+
+        $currentSentiment = $ticket->ai_context['current_sentiment'] ?? null;
+
+        return $this->success([
+            'current' => $currentSentiment,
+            'history' => $sentiments,
+            'summary' => [
+                'total' => $sentiments->count(),
+                'happy' => $sentiments->where('sentiment', 'happy')->count(),
+                'neutral' => $sentiments->where('sentiment', 'neutral')->count(),
+                'confused' => $sentiments->where('sentiment', 'confused')->count(),
+                'angry' => $sentiments->where('sentiment', 'angry')->count(),
+                'urgent' => $sentiments->where('sentiment', 'urgent')->count(),
+            ],
+        ]);
+    }
 }

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Events\TicketCreated;
+use App\Events\TicketReplied;
+use App\Listeners\AnalyzeSentiment;
 use App\Listeners\GenerateAIResponse;
 use App\Listeners\SendTicketNotification;
 use App\Models\Ticket;
@@ -58,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(
             TicketCreated::class,
             SendTicketNotification::class,
+        );
+
+        Event::listen(
+            TicketReplied::class,
+            AnalyzeSentiment::class,
         );
     }
 }

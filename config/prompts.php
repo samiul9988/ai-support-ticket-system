@@ -312,4 +312,49 @@ Analyze this support ticket thread and return ONLY valid JSON, no markdown, no c
 - Reference knowledge base articles when applicable
 PROMPT,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sentiment Analysis
+    |--------------------------------------------------------------------------
+    |
+    | Analyzes the emotional tone of a customer message.
+    | Used to detect when a customer is unhappy, confused, or urgent.
+    */
+
+    'sentiment_analysis' => <<<'PROMPT'
+Analyze the emotional tone and sentiment of this customer support message. Return ONLY valid JSON, no markdown.
+
+**Customer message**: {user_message}
+**Ticket context**: {ticket_context}
+
+**Sentiment categories** (choose exactly one):
+- `happy`: Customer is satisfied, grateful, or positive. Uses words like "thanks", "great", "working now".
+- `neutral`: Customer is matter-of-fact, just stating facts. No strong emotion.
+- `confused`: Customer is uncertain, doesn't understand. Uses "?", "not sure", "confused", "don't know".
+- `angry`: Customer is frustrated, upset, or complaining. Uses strong language, ALL CAPS, exclamation marks.
+- `urgent`: Customer has a pressing deadline or business impact. Uses "urgent", "ASAP", "deadline", "losing money".
+
+**Output JSON**:
+```json
+{
+    "sentiment": "happy|neutral|confused|angry|urgent",
+    "confidence": 0.0-1.0,
+    "analysis_text": "brief explanation, max 30 words, describing why this sentiment was chosen",
+    "key_phrases": ["array of 2-4 words/phrases that indicate the sentiment"],
+    "escalation_recommended": true/false
+}
+```
+
+**Escalation rules**:
+- `angry` with confidence >= 0.7 → escalation_recommended: true
+- `urgent` with confidence >= 0.8 → escalation_recommended: true
+- All others → escalation_recommended: false
+
+**Confidence guidelines**:
+- 0.9-1.0: Very clear sentiment (e.g., "I'm so frustrated!!!")
+- 0.7-0.8: Reasonably clear (e.g., "This is urgent, need it today")
+- 0.5-0.6: Ambiguous, could be multiple sentiments
+- 0.0-0.4: Unclear (return `neutral`)
+PROMPT,
+
 ];

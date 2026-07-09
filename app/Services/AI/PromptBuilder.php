@@ -137,6 +137,16 @@ class PromptBuilder
         ]);
     }
 
+    public function sentimentAnalysis(
+        string $userMessage,
+        string $ticketContext = '',
+    ): string {
+        return $this->buildWithoutSystem('sentiment_analysis', [
+            'user_message' => $userMessage,
+            'ticket_context' => $ticketContext,
+        ]);
+    }
+
     public function getSystemIdentity(): string
     {
         return $this->systemIdentity;

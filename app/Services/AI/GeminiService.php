@@ -182,6 +182,53 @@ class GeminiService implements AIServiceInterface
         }
     }
 
+    public function analyzeSentiment(
+        string $userMessage,
+        string $ticketContext = '',
+    ): array {
+        $this->circuitBreaker->isAvailable();
+
+        $fullPrompt = $this->promptBuilder->sentimentAnalysis($userMessage, $ticketContext);
+
+        $startTime = microtime(true);
+
+        try {
+            $result = $this->retryHandler->execute(function () use ($fullPrompt) {
+                return $this->executeApiCall($fullPrompt, 0.2, 256);
+            }, 'analyze_sentiment');
+
+            $durationMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            $parsed = $this->parser->parseJson($result['response']);
+            $usage = $this->parser->parseUsageMetadata($result['response']);
+
+            $this->usageTracker->track(
+                model: $this->client->getModel(),
+                promptTokens: $usage['prompt_tokens'],
+                completionTokens: $usage['completion_tokens'],
+                totalTokens: $usage['total_tokens'],
+                durationMs: $durationMs,
+                success: true,
+            );
+
+            $this->circuitBreaker->recordSuccess();
+
+            Log::info('AI sentiment analysis completed', [
+                'sentiment' => $parsed['sentiment'] ?? '?',
+                'confidence' => $parsed['confidence'] ?? 0,
+                'duration_ms' => $durationMs,
+            ]);
+
+            return array_merge($parsed, ['_usage' => $usage]);
+        } catch (\Throwable $e) {
+            $this->circuitBreaker->recordFailure();
+
+            Log::error('AI sentiment analysis failed', ['error' => $e->getMessage()]);
+
+            return $this->defaultSentiment();
+        }
+    }
+
     public function getUsageToday(): array
     {
         return [
@@ -333,6 +380,22 @@ class GeminiService implements AIServiceInterface
             'possible_solutions' => [],
             'recommended_next_step' => 'Review ticket manually.',
             'generated_at' => now()->toIso8601String(),
+            '_usage' => [
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
+                'total_tokens' => 0,
+            ],
+        ];
+    }
+
+    protected function defaultSentiment(): array
+    {
+        return [
+            'sentiment' => 'neutral',
+            'confidence' => 0.00,
+            'analysis_text' => 'Sentiment analysis unavailable.',
+            'key_phrases' => [],
+            'escalation_recommended' => false,
             '_usage' => [
                 'prompt_tokens' => 0,
                 'completion_tokens' => 0,

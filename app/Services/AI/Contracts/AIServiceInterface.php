@@ -20,6 +20,11 @@ interface AIServiceInterface
         array $knowledgeBase = [],
     ): array;
 
+    public function analyzeSentiment(
+        string $userMessage,
+        string $ticketContext = '',
+    ): array;
+
     public function getUsageToday(): array;
 
     public function isCircuitOpen(): bool;
