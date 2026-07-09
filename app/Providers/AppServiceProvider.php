@@ -39,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
             return new \App\Services\AI\ConversationContextBuilder(10);
         });
         $this->app->singleton(\App\Services\AIDashboardService::class);
+        $this->app->singleton(\App\Services\AdminDashboardService::class);
         $this->app->singleton(RetryHandler::class, function () {
             return new RetryHandler(config('gemini.providers.gemini'));
         });

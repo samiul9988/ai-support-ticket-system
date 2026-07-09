@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdminDashboardController;
 use App\Http\Controllers\Api\V1\AIDashboardController;
 use App\Http\Controllers\Api\V1\AdminKnowledgeArticleController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -66,6 +67,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/models', [AIDashboardController::class, 'modelBreakdown']);
         Route::get('/failures', [AIDashboardController::class, 'recentFailures']);
         Route::get('/requests', [AIDashboardController::class, 'recentRequests']);
+    });
+
+    Route::prefix('admin/dashboard')->group(function () {
+        Route::get('/widgets', [AdminDashboardController::class, 'widgets']);
+        Route::get('/status', [AdminDashboardController::class, 'statusDistribution']);
+        Route::get('/priority', [AdminDashboardController::class, 'priorityDistribution']);
+        Route::get('/agents', [AdminDashboardController::class, 'topAgents']);
+        Route::get('/trend', [AdminDashboardController::class, 'dailyTrend']);
+        Route::get('/ai-trend', [AdminDashboardController::class, 'aiResponseTrend']);
+        Route::get('/satisfaction', [AdminDashboardController::class, 'customerSatisfaction']);
     });
 
     Route::prefix('admin/knowledge-base')->group(function () {
