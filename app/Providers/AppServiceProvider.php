@@ -7,8 +7,10 @@ use App\Events\TicketReplied;
 use App\Listeners\AnalyzeSentiment;
 use App\Listeners\GenerateAIResponse;
 use App\Listeners\SendTicketNotification;
+use App\Models\KnowledgeArticle;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Policies\KnowledgeArticlePolicy;
 use App\Policies\TicketPolicy;
 use App\Services\AI\CircuitBreaker;
 use App\Services\AI\Clients\GeminiApiClient;
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Ticket::class, TicketPolicy::class);
+        Gate::policy(KnowledgeArticle::class, KnowledgeArticlePolicy::class);
 
         Gate::before(function (User $user, string $ability) {
             if ($user->isAdmin()) {

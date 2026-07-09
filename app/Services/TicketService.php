@@ -171,10 +171,10 @@ class TicketService
             ->map(fn ($reply) => ($reply->is_ai_generated ? 'AI' : $reply->user?->name ?? 'Customer') . ': ' . $reply->content)
             ->toArray();
 
-        $knowledgeArticles = \App\Models\KnowledgeArticle::published()
-            ->where('category_id', $ticket->category_id)
-            ->orWhereNull('category_id')
-            ->limit(5)
+        $knowledgeArticles = \App\Models\KnowledgeArticle::relevantToTicket(
+            ticket: $ticket,
+            limit: 5,
+        )
             ->get()
             ->map(fn ($a) => '[' . $a->title . '] ' . $a->content)
             ->toArray();

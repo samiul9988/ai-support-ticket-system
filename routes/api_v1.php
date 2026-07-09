@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AdminKnowledgeArticleController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\KnowledgeArticleController;
 use App\Http\Controllers\Api\V1\TicketCategoryController;
@@ -27,8 +28,12 @@ Route::prefix('auth')->group(function () {
 Route::get('/categories', [TicketCategoryController::class, 'index']);
 Route::get('/categories/{id}', [TicketCategoryController::class, 'show']);
 
-Route::get('/knowledge-base', [KnowledgeArticleController::class, 'index']);
-Route::get('/knowledge-base/{id}', [KnowledgeArticleController::class, 'show']);
+Route::prefix('knowledge-base')->group(function () {
+    Route::get('/', [KnowledgeArticleController::class, 'index']);
+    Route::get('/{id}', [KnowledgeArticleController::class, 'show']);
+    Route::post('/{id}/helpful', [KnowledgeArticleController::class, 'helpful']);
+    Route::post('/{id}/not-helpful', [KnowledgeArticleController::class, 'notHelpful']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tickets/stats', [TicketController::class, 'stats']);
@@ -49,4 +54,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tickets/{id}/insights', [TicketController::class, 'insights']);
     Route::get('/tickets/{id}/sentiment', [TicketController::class, 'sentiment']);
     Route::get('/tickets/{id}/classification', [TicketController::class, 'classification']);
+
+    Route::prefix('admin/knowledge-base')->group(function () {
+        Route::get('/', [AdminKnowledgeArticleController::class, 'index']);
+        Route::post('/', [AdminKnowledgeArticleController::class, 'store']);
+        Route::get('/{id}', [AdminKnowledgeArticleController::class, 'show']);
+        Route::put('/{id}', [AdminKnowledgeArticleController::class, 'update']);
+        Route::delete('/{id}', [AdminKnowledgeArticleController::class, 'destroy']);
+        Route::post('/{id}/publish', [AdminKnowledgeArticleController::class, 'publish']);
+        Route::post('/{id}/unpublish', [AdminKnowledgeArticleController::class, 'unpublish']);
+    });
 });
