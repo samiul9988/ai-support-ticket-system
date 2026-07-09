@@ -249,4 +249,40 @@ class TicketController extends Controller
             ],
         ]);
     }
+
+    public function ragAnswer(int $id, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->findOrFail($id);
+
+        if ($request->user()->cannot('view', $ticket)) {
+            return $this->forbidden();
+        }
+
+        $ragService = app(\App\Services\AI\RagService::class);
+
+        $result = $ragService->answerForTicket($ticket);
+
+        return $this->success([
+            'answer' => $result['answer'],
+            'sources' => $result['sources'],
+            'pipeline' => [
+                'retrieve' => [
+                    'articles_found' => $result['pipeline']['retrieve']['count'],
+                    'top_score' => $result['pipeline']['retrieve']['top_score'],
+                    'duration_ms' => $result['pipeline']['retrieve']['duration_ms'],
+                ],
+                'augment' => [
+                    'articles_used' => $result['pipeline']['augment']['article_count'],
+                    'context_length' => $result['pipeline']['augment']['context_length'],
+                    'duration_ms' => $result['pipeline']['augment']['duration_ms'],
+                ],
+                'generate' => [
+                    'model' => $result['pipeline']['generate']['model'] ?? 'unknown',
+                    'tokens' => $result['pipeline']['generate']['tokens'] ?? [],
+                    'duration_ms' => $result['pipeline']['generate']['duration_ms'],
+                ],
+            ],
+            'total_duration_ms' => $result['total_duration_ms'],
+        ]);
+    }
 }

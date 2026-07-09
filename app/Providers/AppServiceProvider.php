@@ -34,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ResponseParser::class);
         $this->app->singleton(CircuitBreaker::class);
         $this->app->singleton(\App\Services\AI\PromptBuilder::class);
+        $this->app->singleton(\App\Services\AI\RagService::class);
+        $this->app->singleton(\App\Services\AI\ConversationContextBuilder::class, function () {
+            return new \App\Services\AI\ConversationContextBuilder(10);
+        });
         $this->app->singleton(RetryHandler::class, function () {
             return new RetryHandler(config('gemini.providers.gemini'));
         });

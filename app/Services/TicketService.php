@@ -165,11 +165,9 @@ class TicketService
             return $cachedInsights;
         }
 
-        $conversationHistory = $ticket->replies()
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($reply) => ($reply->is_ai_generated ? 'AI' : $reply->user?->name ?? 'Customer') . ': ' . $reply->content)
-            ->toArray();
+        $contextBuilder = app(\App\Services\AI\ConversationContextBuilder::class);
+
+        $conversationHistory = $contextBuilder->build($ticket);
 
         $knowledgeArticles = \App\Models\KnowledgeArticle::relevantToTicket(
             ticket: $ticket,

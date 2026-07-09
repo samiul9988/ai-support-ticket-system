@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tickets/{id}/insights', [TicketController::class, 'insights']);
     Route::get('/tickets/{id}/sentiment', [TicketController::class, 'sentiment']);
     Route::get('/tickets/{id}/classification', [TicketController::class, 'classification']);
+    Route::get('/tickets/{id}/rag-answer', [TicketController::class, 'ragAnswer']);
 
     Route::prefix('admin/knowledge-base')->group(function () {
         Route::get('/', [AdminKnowledgeArticleController::class, 'index']);

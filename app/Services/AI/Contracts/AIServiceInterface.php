@@ -25,6 +25,8 @@ interface AIServiceInterface
         string $ticketContext = '',
     ): array;
 
+    public function generateRagAnswer(string $prompt): array;
+
     public function getUsageToday(): array;
 
     public function isCircuitOpen(): bool;

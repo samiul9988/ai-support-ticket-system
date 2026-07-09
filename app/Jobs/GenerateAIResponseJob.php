@@ -160,12 +160,9 @@ class GenerateAIResponseJob implements ShouldQueue
             'attempt' => $this->attempts(),
         ]);
 
-        $previousReplies = $this->ticket->replies()
-            ->orderBy('created_at')
-            ->limit(10)
-            ->get()
-            ->map(fn ($reply) => ($reply->is_ai_generated ? 'AI' : $reply->user?->name ?? 'Customer') . ': ' . $reply->content)
-            ->toArray();
+        $contextBuilder = app(\App\Services\AI\ConversationContextBuilder::class);
+
+        $previousReplies = $contextBuilder->build($this->ticket);
 
         $knowledgeArticles = \App\Models\KnowledgeArticle::relevantToTicket(
             ticket: $this->ticket,

@@ -147,6 +147,21 @@ class PromptBuilder
         ]);
     }
 
+    public function ragAnswer(string $question, string $context): string
+    {
+        return $this->build('rag_answer', [
+            'question' => $question,
+            'context' => $context,
+        ]);
+    }
+
+    public function ragAnswerFallback(string $question): string
+    {
+        return $this->build('rag_answer_fallback', [
+            'question' => $question,
+        ]);
+    }
+
     public function getSystemIdentity(): string
     {
         return $this->systemIdentity;

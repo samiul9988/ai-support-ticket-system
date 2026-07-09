@@ -82,7 +82,7 @@ PROMPT,
     */
 
     'follow_up_reply' => <<<'PROMPT'
-The customer replied to an ongoing support ticket. Generate a helpful response.
+The customer replied to an ongoing support ticket. The previous conversation is provided as context. Use it to give a coherent, context-aware response.
 
 **Context:**
 - **Ticket**: {ticket_title}
@@ -91,12 +91,12 @@ The customer replied to an ongoing support ticket. Generate a helpful response.
 - **Conversation history**: {previous_conversation}
 - **Knowledge Base**: {knowledge_base}
 
-**Instructions:**
-1. Read the conversation history carefully. Reference previous suggestions.
-2. If the customer tried a suggested fix, ask what happened specifically.
-3. If the customer provided new details, acknowledge them and adjust your approach.
-4. If a KB article covers the new information, reference it.
-5. If you've exhausted self-service options, recommend escalation.
+**Instructions**:
+1. **READ THE CONVERSATION HISTORY FIRST.** Do not suggest things already tried.
+2. Reference specific details the customer mentioned earlier. Show you remember.
+3. If the customer tried a suggested fix and it didn't work, acknowledge it: "I see you already tried X, and it didn't work. Let's try Y instead."
+4. If the conversation shows multiple failed attempts, escalate instead of suggesting more.
+5. If a KB article covers the new information, reference it.
 6. Stay under **120 words**. Use Markdown formatting.
 PROMPT,
 
@@ -368,6 +368,53 @@ Analyze the emotional tone and sentiment of this customer support message. Retur
 - 0.7-0.8: Reasonably clear (e.g., "This is urgent, need it today")
 - 0.5-0.6: Ambiguous, could be multiple sentiments
 - 0.0-0.4: Unclear (return `neutral`)
+PROMPT,
+
+    /*
+    |--------------------------------------------------------------------------
+    | RAG Answer (Retrieval Augmented Generation)
+    |--------------------------------------------------------------------------
+    |
+    | Used when answering a customer question based on retrieved KB articles.
+    | The AI MUST base its answer on the provided context.
+    */
+
+    'rag_answer' => <<<'PROMPT'
+**CRITICAL RULE**: You MUST base your answer ONLY on the provided articles below. Do NOT use any external knowledge. If the articles do not contain enough information to answer, say so honestly.
+
+**Question**: {question}
+
+**Relevant Knowledge Base Articles**:
+{context}
+
+**Instructions**:
+1. Answer the question using ONLY information from the articles above.
+2. Cite sources using `[1]`, `[2]` markers after each claim.
+3. If multiple articles provide relevant info, synthesize them into one coherent answer.
+4. If the articles contradict each other, note the discrepancy.
+5. If the articles do not fully answer the question, state what is covered and what is NOT covered.
+6. Keep the answer under **150 words**. Use Markdown formatting.
+7. End with a helpful suggestion or next step from the articles.
+PROMPT,
+
+    /*
+    |--------------------------------------------------------------------------
+    | RAG Answer Fallback (No Articles Found)
+    |--------------------------------------------------------------------------
+    |
+    | Used when no KB articles match the customer's question.
+    */
+
+    'rag_answer_fallback' => <<<'PROMPT'
+**CRITICAL RULE**: No knowledge base articles matched this question. Do NOT invent information.
+
+**Question**: {question}
+
+**Instructions**:
+1. Politely explain that you couldn't find specific information on this topic.
+2. Ask ONE clarifying question that would help narrow the search.
+3. Reassure the customer that a human agent will review their inquiry.
+4. Keep the answer under **80 words**. Use Markdown formatting.
 PROMPT,
 
 ];

@@ -48,6 +48,8 @@ class GeminiService implements AIServiceInterface
     ): array {
         $this->circuitBreaker->isAvailable();
 
+        $this->validateContext($context);
+
         $hasHistory = ! empty($context['previous_replies']);
 
         if ($hasHistory) {
@@ -229,6 +231,20 @@ class GeminiService implements AIServiceInterface
         }
     }
 
+    public function generateRagAnswer(string $prompt): array
+    {
+        $this->circuitBreaker->isAvailable();
+
+        return $this->executeWithTracking(
+            prompt: $prompt,
+            temperature: 0.4,
+            maxTokens: $this->maxOutputTokens,
+            operation: 'rag_answer',
+            ticketId: null,
+            promptType: 'rag_answer',
+        );
+    }
+
     public function getUsageToday(): array
     {
         return [
@@ -251,6 +267,21 @@ class GeminiService implements AIServiceInterface
     public function getPromptBuilder(): PromptBuilder
     {
         return $this->promptBuilder;
+    }
+
+    protected function validateContext(array $context): void
+    {
+        if (empty($context['previous_replies'])) {
+            Log::info('AI response generated without conversation history', [
+                'ticket_id' => $context['ticket_id'] ?? null,
+            ]);
+        }
+
+        if (empty($context['knowledge_base'])) {
+            Log::info('AI response generated without knowledge base', [
+                'ticket_id' => $context['ticket_id'] ?? null,
+            ]);
+        }
     }
 
     protected function executeWithTracking(

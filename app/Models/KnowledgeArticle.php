@@ -139,6 +139,111 @@ class KnowledgeArticle extends Model
         return $query->findRelevant($searchText, $ticket->category_id, $limit);
     }
 
+    public static function retrieveForRag(string $question, ?int $categoryId = null, int $limit = 5): array
+    {
+        $articles = static::published()
+            ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
+            ->get();
+
+        if ($articles->isEmpty()) {
+            return [];
+        }
+
+        $words = static::extractKeywordsStatic($question);
+
+        if (empty($words)) {
+            return $articles->take($limit)
+                ->map(fn ($a) => static::formatRagResult($a, 0.1))
+                ->toArray();
+        }
+
+        $scored = $articles->map(function ($article) use ($words) {
+            $score = static::calculateRelevanceScore(
+                title: $article->title,
+                content: $article->content,
+                keywords: $article->meta_keywords ?? [],
+                searchWords: $words,
+            );
+
+            return [
+                'article' => $article,
+                'score' => $score,
+            ];
+        })
+        ->filter(fn ($r) => $r['score'] > 0)
+        ->sortByDesc('score')
+        ->take($limit);
+
+        return $scored->map(function ($r) {
+            return static::formatRagResult($r['article'], $r['score']);
+        })->values()->toArray();
+    }
+
+    protected static function formatRagResult(self $article, float $score): array
+    {
+        return [
+            'id' => $article->id,
+            'title' => $article->title,
+            'content' => $article->content,
+            'slug' => $article->slug,
+            'category_id' => $article->category_id,
+            'score' => round($score, 3),
+            'helpful_count' => $article->helpful_count,
+            'view_count' => $article->view_count,
+        ];
+    }
+
+    protected static function calculateRelevanceScore(
+        string $title,
+        string $content,
+        array $keywords,
+        array $searchWords,
+    ): float {
+        $score = 0;
+        $titleLower = strtolower($title);
+        $contentLower = strtolower($content);
+        $keywordLower = array_map('strtolower', $keywords);
+        $totalWords = count($searchWords);
+
+        foreach ($searchWords as $word) {
+            $word = strtolower($word);
+
+            if ($word === '') {
+                continue;
+            }
+
+            if (str_contains($titleLower, $word)) {
+                $score += 3;  // Title matches are strongest
+            }
+
+            if (str_contains($contentLower, $word)) {
+                $score += 1;  // Content matches
+            }
+
+            foreach ($keywordLower as $kw) {
+                if (str_contains($kw, $word) || str_contains($word, $kw)) {
+                    $score += 2;  // Keyword tag matches
+                    break;
+                }
+            }
+        }
+
+        return $score / max($totalWords * 3, 1);
+    }
+
+    protected static function extractKeywordsStatic(string $text): array
+    {
+        $text = strtolower($text);
+        $text = preg_replace('/[^\w\s]/', ' ', $text);
+        $words = array_filter(explode(' ', $text), fn ($w) => strlen($w) > 3);
+
+        $stopWords = ['this', 'that', 'with', 'from', 'have', 'been', 'when', 'what', 'your',
+            'will', 'they', 'about', 'there', 'their', 'which', 'after', 'before', 'please',
+            'would', 'could', 'should', 'thank', 'thanks', 'hello'];
+
+        return array_unique(array_values(array_diff($words, $stopWords)));
+    }
+
     public function incrementViewCount(): void
     {
         $this->increment('view_count');
