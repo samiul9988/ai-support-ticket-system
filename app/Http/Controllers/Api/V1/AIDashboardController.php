@@ -14,53 +14,75 @@ class AIDashboardController extends Controller
 
     public function __construct(protected AIDashboardService $dashboardService) {}
 
-    public function overview(): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
+
         return $this->success($this->dashboardService->overview());
     }
 
     public function dailyUsage(Request $request): JsonResponse
     {
-        $days = min(90, (int) $request->input('days', 30));
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
 
+        $days = min(90, (int) $request->input('days', 30));
         return $this->success($this->dashboardService->dailyUsage($days));
     }
 
     public function monthlyUsage(Request $request): JsonResponse
     {
-        $months = min(24, (int) $request->input('months', 12));
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
 
+        $months = min(24, (int) $request->input('months', 12));
         return $this->success($this->dashboardService->monthlyUsage($months));
     }
 
-    public function hourlyToday(): JsonResponse
+    public function hourlyToday(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         return $this->success($this->dashboardService->hourlyUsageToday());
     }
 
     public function topCategories(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         $limit = min(20, (int) $request->input('limit', 8));
-
         return $this->success($this->dashboardService->topCategories($limit));
     }
 
-    public function modelBreakdown(): JsonResponse
+    public function modelBreakdown(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         return $this->success($this->dashboardService->modelBreakdown());
     }
 
     public function recentFailures(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         $limit = min(50, (int) $request->input('limit', 10));
-
         return $this->success($this->dashboardService->recentFailures($limit));
     }
 
     public function recentRequests(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         $limit = min(50, (int) $request->input('limit', 20));
-
         return $this->success($this->dashboardService->recentRequests($limit));
     }
 }

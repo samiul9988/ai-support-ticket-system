@@ -50,8 +50,12 @@ class TicketRepository implements TicketRepositoryInterface
         }
 
         if (! empty($filters['sort_by'])) {
-            $direction = $filters['sort_dir'] ?? 'desc';
-            $query->orderBy($filters['sort_by'], $direction);
+            $allowedSorts = ['id', 'title', 'status', 'priority', 'created_at', 'updated_at'];
+            if (in_array($filters['sort_by'], $allowedSorts)) {
+                $direction = $filters['sort_dir'] ?? 'desc';
+                $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
+                $query->orderBy($filters['sort_by'], $direction);
+            }
         } else {
             $query->latest();
         }

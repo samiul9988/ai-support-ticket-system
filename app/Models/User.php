@@ -27,7 +27,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'role_id',
         'avatar',
         'phone',
-        'is_active',
     ];
 
     protected $attributes = [
@@ -46,6 +45,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function activate(): void
+    {
+        $this->update(['is_active' => true]);
+    }
+
+    public function deactivate(): void
+    {
+        $this->update(['is_active' => false]);
     }
 
     public function role(): BelongsTo

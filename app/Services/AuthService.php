@@ -14,11 +14,14 @@ class AuthService
 {
     public function register(array $data): array
     {
+        $customerRoleId = \App\Models\Role::where('slug', 'customer')->value('id');
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role_id' => $data['role_id'] ?? null,
+            'role_id' => $customerRoleId,
+            'is_active' => true,
         ]);
 
         event(new Registered($user));
@@ -43,9 +46,9 @@ class AuthService
             ]);
         }
 
-        if (! $user->isActive()) {
+        if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'email' => ['This account has been deactivated. Contact support.'],
+                'email' => ['The provided credentials are incorrect.'],
             ]);
         }
 

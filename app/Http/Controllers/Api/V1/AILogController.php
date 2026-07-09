@@ -14,6 +14,10 @@ class AILogController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
+
         $query = AiUsageLog::with('ticket:id,title')->latest();
 
         if ($request->has('operation')) {
@@ -45,8 +49,12 @@ class AILogController extends Controller
         return $this->success($logs);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
+
         $log = AiUsageLog::with('ticket:id,title', 'promptHistory')->find($id);
 
         if (! $log) {
@@ -56,8 +64,11 @@ class AILogController extends Controller
         return $this->success($log);
     }
 
-    public function summary(): JsonResponse
+    public function summary(Request $request): JsonResponse
     {
+        if ($request->user()->isCustomer()) {
+            return $this->forbidden();
+        }
         $today = AiUsageLog::today();
 
         return $this->success([

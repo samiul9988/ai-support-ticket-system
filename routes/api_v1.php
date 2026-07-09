@@ -12,10 +12,14 @@ use App\Http\Controllers\Api\V1\TicketReplyController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/register', [AuthController::class, 'register'])
+        ->middleware('throttle:5,1');
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:3,1');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:5,1');
 
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
         ->name('verification.verify');
@@ -31,12 +35,14 @@ Route::prefix('auth')->group(function () {
 Route::get('/categories', [TicketCategoryController::class, 'index']);
 Route::get('/categories/{id}', [TicketCategoryController::class, 'show']);
 
-Route::prefix('knowledge-base')->group(function () {
-    Route::get('/', [KnowledgeArticleController::class, 'index']);
-    Route::get('/{id}', [KnowledgeArticleController::class, 'show']);
-    Route::post('/{id}/helpful', [KnowledgeArticleController::class, 'helpful']);
-    Route::post('/{id}/not-helpful', [KnowledgeArticleController::class, 'notHelpful']);
-});
+    Route::prefix('knowledge-base')->group(function () {
+        Route::get('/', [KnowledgeArticleController::class, 'index']);
+        Route::get('/{id}', [KnowledgeArticleController::class, 'show']);
+        Route::post('/{id}/helpful', [KnowledgeArticleController::class, 'helpful'])
+            ->middleware('throttle:10,1');
+        Route::post('/{id}/not-helpful', [KnowledgeArticleController::class, 'notHelpful'])
+            ->middleware('throttle:10,1');
+    });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tickets/stats', [TicketController::class, 'stats']);

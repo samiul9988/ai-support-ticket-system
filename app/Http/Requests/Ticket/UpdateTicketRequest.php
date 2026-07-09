@@ -20,7 +20,6 @@ class UpdateTicketRequest extends FormRequest
             'description' => ['sometimes', 'string', 'min:10'],
             'category_id' => ['sometimes', 'nullable', 'integer', 'exists:ticket_categories,id'],
             'priority' => ['sometimes', new Enum(TicketPriority::class)],
-            'assigned_to' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
         ];
     }
 }
