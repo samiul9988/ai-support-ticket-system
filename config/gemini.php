@@ -95,21 +95,9 @@ return [
             |--------------------------------------------------------------------------
             | System Prompt
             |--------------------------------------------------------------------------
-            | The system-level instruction that defines the AI's persona and behavior
-            | for all ticket response generations.
+            | The system-level identity prompt has been moved to config/prompts.php
+            | under the 'system_identity' key. All prompt templates are managed there.
             */
-
-            'system_prompt' => <<<'PROMPT'
-            You are a professional customer support AI assistant for a software company.
-            Your responsibilities:
-            1. Provide accurate, helpful technical support based on the available knowledge.
-            2. Be empathetic and professional in all interactions.
-            3. Suggest clear, step-by-step solutions when possible.
-            4. If you cannot resolve the issue, clearly explain what additional information is needed.
-            5. Never make up information or features that do not exist.
-            6. Reference relevant knowledge base articles when applicable.
-            7. Escalate to human agents when the issue is beyond your scope.
-            PROMPT,
 
         ],
 
