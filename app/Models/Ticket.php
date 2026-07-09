@@ -82,6 +82,16 @@ class Ticket extends Model
         return $this->sentiments()->first();
     }
 
+    public function classifications(): HasMany
+    {
+        return $this->hasMany(TicketClassification::class)->latest();
+    }
+
+    public function latestClassification(): ?TicketClassification
+    {
+        return $this->classifications()->first();
+    }
+
     public function scopeOpen($query)
     {
         return $query->where('status', TicketStatus::OPEN);

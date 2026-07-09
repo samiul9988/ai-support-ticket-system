@@ -83,12 +83,73 @@ class GenerateAIResponseJob implements ShouldQueue
 
         $this->ticket->update(['ai_context' => $analysis]);
 
+        $this->storeClassification($analysis);
+
+        $this->autoApplyCategory($analysis);
+
         Log::info('AI analysis completed', [
             'ticket_id' => $this->ticket->id,
             'category' => $analysis['suggested_category'] ?? 'unknown',
+            'confidence' => $analysis['category_confidence'] ?? 0,
             'priority' => $analysis['suggested_priority'] ?? 'unknown',
             'sentiment' => $analysis['sentiment'] ?? 'unknown',
         ]);
+    }
+
+    protected function storeClassification(array $analysis): void
+    {
+        $category = $analysis['suggested_category'] ?? null;
+
+        if (! $category) {
+            return;
+        }
+
+        $this->ticket->classifications()->create([
+            'category' => $category,
+            'confidence' => $analysis['category_confidence'] ?? 0.0,
+            'reasoning' => $analysis['category_reasoning'] ?? null,
+            'model' => config('gemini.providers.gemini.model'),
+            'is_auto_applied' => ($analysis['category_confidence'] ?? 0) >= 0.70,
+        ]);
+
+        Log::info('Ticket classification stored', [
+            'ticket_id' => $this->ticket->id,
+            'category' => $category,
+            'confidence' => $analysis['category_confidence'] ?? 0,
+        ]);
+    }
+
+    protected function autoApplyCategory(array $analysis): void
+    {
+        $confidence = $analysis['category_confidence'] ?? 0;
+        $category = $analysis['suggested_category'] ?? null;
+
+        if (! $category || $confidence < 0.70) {
+            Log::info('Classification confidence too low for auto-assign', [
+                'ticket_id' => $this->ticket->id,
+                'confidence' => $confidence,
+            ]);
+
+            return;
+        }
+
+        $categoryModel = \App\Models\TicketCategory::where('slug', $category)->first();
+
+        if ($categoryModel) {
+            $this->ticket->update(['category_id' => $categoryModel->id]);
+
+            Log::info('Ticket category auto-assigned', [
+                'ticket_id' => $this->ticket->id,
+                'category' => $category,
+                'category_id' => $categoryModel->id,
+                'confidence' => $confidence,
+            ]);
+        } else {
+            Log::info('No matching TicketCategory found for auto-assign', [
+                'ticket_id' => $this->ticket->id,
+                'suggested_category' => $category,
+            ]);
+        }
     }
 
     protected function generateAiResponse(AIServiceInterface $aiService): void

@@ -349,7 +349,9 @@ class GeminiService implements AIServiceInterface
     protected function defaultAnalysis(): array
     {
         return [
-            'suggested_category' => 'general',
+            'suggested_category' => 'technical',
+            'category_confidence' => 0.00,
+            'category_reasoning' => 'AI analysis unavailable.',
             'suggested_priority' => 'medium',
             'summary' => 'No AI analysis available',
             'sentiment' => 'neutral',

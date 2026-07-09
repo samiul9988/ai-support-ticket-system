@@ -217,4 +217,36 @@ class TicketController extends Controller
             ],
         ]);
     }
+
+    public function classification(int $id, Request $request): JsonResponse
+    {
+        $ticket = $this->ticketService->findOrFail($id);
+
+        if ($request->user()->cannot('view', $ticket)) {
+            return $this->forbidden();
+        }
+
+        $classifications = $ticket->classifications()->latest()->limit(10)->get();
+
+        $current = $ticket->ai_context['suggested_category'] ?? null;
+        $currentConfidence = $ticket->ai_context['category_confidence'] ?? null;
+
+        return $this->success([
+            'current' => $current ? [
+                'category' => $current,
+                'confidence' => $currentConfidence,
+            ] : null,
+            'history' => $classifications,
+            'summary' => [
+                'total' => $classifications->count(),
+                'billing' => $classifications->where('category', 'billing')->count(),
+                'payment' => $classifications->where('category', 'payment')->count(),
+                'refund' => $classifications->where('category', 'refund')->count(),
+                'shipping' => $classifications->where('category', 'shipping')->count(),
+                'technical' => $classifications->where('category', 'technical')->count(),
+                'account' => $classifications->where('category', 'account')->count(),
+                'order' => $classifications->where('category', 'order')->count(),
+            ],
+        ]);
+    }
 }

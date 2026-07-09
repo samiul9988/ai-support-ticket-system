@@ -27,6 +27,13 @@ class TicketResource extends JsonResource
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
             'status_history' => TicketStatusHistoryResource::collection($this->whenLoaded('statusHistory')),
             'sentiment' => $this->when($this->ai_context['current_sentiment'] ?? null, fn () => $this->ai_context['current_sentiment']),
+            'classification' => $this->when(
+                $this->ai_context['suggested_category'] ?? null,
+                fn () => [
+                    'category' => $this->ai_context['suggested_category'],
+                    'confidence' => $this->ai_context['category_confidence'] ?? null,
+                ]
+            ),
             'resolved_at' => $this->resolved_at,
             'closed_at' => $this->closed_at,
             'created_at' => $this->created_at,

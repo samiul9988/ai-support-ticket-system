@@ -119,7 +119,9 @@ Analyze this support ticket. Return ONLY valid JSON, no markdown or extra text.
 **Output JSON schema**:
 ```json
 {
-    "suggested_category": "account|billing|technical|feature_request|bug_report|general",
+    "suggested_category": "billing|payment|refund|shipping|technical|account|order",
+    "category_confidence": 0.0-1.0,
+    "category_reasoning": "string: why this category was chosen, max 25 words",
     "suggested_priority": "low|medium|high|urgent",
     "summary": "one-line summary, max 15 words",
     "sentiment": "positive|neutral|negative|frustrated",
@@ -131,11 +133,22 @@ Analyze this support ticket. Return ONLY valid JSON, no markdown or extra text.
 }
 ```
 
+**Category definitions**:
+- `billing`: Invoice charges, billing cycle questions, payment history, plan pricing
+- `payment`: Failed transactions, payment method issues, declined cards, checkout errors
+- `refund`: Return requests, refund status, credit not received, cancellation refunds
+- `shipping`: Delivery status, tracking numbers, shipping address, lost packages
+- `technical`: Errors, bugs, crashes, performance, API, integration, login errors
+- `account`: Profile settings, password reset, email change, account deactivation
+- `order`: Order status, modifications, cancellations, duplicate orders, receipts
+
 **Priority guidelines**:
 - `urgent`: System down, security breach, data loss
 - `high`: Blocked workflow, billing issue, deadline pressure
 - `medium`: Feature not working as expected, configuration help
 - `low`: Cosmetic issue, feature request, general question
+
+Assign `requires_human: true` if the issue is complex, security-related, or involves financial data.
 PROMPT,
 
     /*
